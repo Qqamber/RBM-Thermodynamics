@@ -31,7 +31,7 @@
 \maketitle
 \tableofcontents
 
-\vskip 6cm
+\vskip 3cm
 \begin{figure}[htbp]
 \begin{center}
 \begin{tikzpicture}
@@ -339,7 +339,7 @@ As a conclusion:
 the correlations between the physical spins must be merely introduced by the ancillary spins! This argument rules out 
 the physical and ancillary interactions in the energy from.
 
-\vskip 2cm
+\vskip 1cm
 \begin{algorithm}[htb]
 	\caption{Training of RBM via SGD}\label{al:rbm}
 	\begin{algorithmic}[1]
@@ -374,14 +374,230 @@ the physical and ancillary interactions in the energy from.
 	\end{algorithmic}
 \end{algorithm}
 
+\section[Road to quantum many-body wave functions]{Road to quantum many-body wave functions\cite{{carleo2017s},{melko2019np}}}
+In order to extend the application of RBM to the representation of quantum many-body wave function, we need to consider complex valued parameters:
+\[ \phi_{\vec{\lambda}}(\vec{\sigma}) = \frac{1}{\sqrt{Z_{\vec{\lambda}}}} \sum_{\vec{\chi}} \exp{(\sum_{i} b_i \chi_i + \sum_{j} a_j \sigma_j + \sum_{i,j} \chi_i W_{ij} \sigma_j)}. \]
+Because we do not have any data for this problem, we need to adopt variational principle:
+\begin{itemize}
+	\item[1)] Find the ground wave function, we have to minimize the energy function: $E_{\vec{\lambda}} = {\qket \phi_{\vec{\lambda}} | \hat{H} | \phi_{\vec{\lambda}} \qbar}/{\qket \phi_{\vec{\lambda}} | \phi_{\vec{\lambda}} \qbar};$
+	\item[2)] Simulate the dynamics of wave function, we have to minimize the distance(parameters becomes time-dependent): $ \mathcal{R}(\dot{\vec{\lambda}}(t)) = \mathrm{dist}(\partial_t | \phi(\dot{\vec{\lambda}}(t)) \qbar, -i \hat{H}| \phi({\vec{\lambda}}(t)) \qbar),$ and it is the time derivative of parameters that we have to learn.
+\end{itemize}
+The optimization of parameters is performed by Variational Monte Carlo(VMC) and Stochastic Reconfiguration Method(SR), which will be introduced later.
+
+\section[Road to density operator]{Road to density operator(mixed state)\cite{{melko2018prl},{Ciuti2019prl},{Nagy2019prl},{Yoshioka2019prb},{carleo2019prl}}}
+In the last section, we know how RBMs can be used to represent a quantum many-body wave function. However, any system in real world must experience decoherence for the coupling with the environment. Thus, it is necessary to know how RBMs can be used to represent a mixed state or density operator. Recently, people proposed three different schemes to achieve this goal.
+\subsection[The regular one]{The regular one\cite{{melko2018prl},{Ciuti2019prl}}}
+\begin{figure}[htbp]
+\begin{center}
+\begin{tikzpicture}
+	\draw (7,-1) node {$\textbf{a}^\theta$ \quad{} \textrm{bias(field)}} (7,0) node {$\textbf{W}^\theta$ \quad{}\textrm{weights}} (7,1) node {$\textbf{b}^\theta$ \quad{}\textrm{bias(field)}} (7,-2) node {$\textbf{U}^\theta$\quad{} \textrm{weights}} (7,-3) node {$\textbf{c}^\theta$ \quad{} \textrm{bias(field)}};
+	\draw (-7,-1) node {\textrm{visible(system)}} (-7,-3) node {\textrm{ancillary(environment)}} (-7,1) node {\textrm{hidden}};
+	\tikzstyle{every node}=[draw,shape=circle,fill=red];
+	\node (s1) at (-5,-1) {$\sigma_1$};
+	\node (s2) at (-3,-1) {$\sigma_2$};
+	\node (s3) at (-1,-1) {$\sigma_3$};
+	\node (s4) at (1,-1) {$\sigma_4$};
+	\node (s5) at (3,-1) {$\sigma_5$};
+	\node (s6) at (5,-1) {$\sigma_6$};
+	\tikzstyle{every node}=[draw,shape=circle,fill=cyan];
+	\node (h1) at (-4,1) {$\chi_1$};
+	\node (h2) at (-2,1) {$\chi_2$};
+	\node (h3) at (0,1) {$\chi_3$};
+	\node (h4) at (2,1) {$\chi_4$};
+	\node (h5) at (4,1) {$\chi_5$};
+	\tikzstyle{every node}=[draw,shape=circle,fill=green];
+	\node (z1) at (-3,-3) {$\eta_1$};
+	\node (z2) at (0,-3) {$\eta_2$};
+	\node (z3) at (3,-3) {$\eta_3$};
+	\draw 	(s1)--(h1) (s1)--(h2) (s1)--(h3) (s1)--(h4) (s1)--(h5)
+			(s2)--(h1) (s2)--(h2) (s2)--(h3) (s2)--(h4) (s2)--(h5)
+			(s3)--(h1) (s3)--(h2) (s3)--(h3) (s3)--(h4) (s3)--(h5)
+			(s4)--(h1) (s4)--(h2) (s4)--(h3) (s5)--(h4) (s4)--(h5)
+			(s5)--(h1) (s5)--(h2) (s5)--(h3) (s5)--(h4) (s5)--(h5)
+			(s6)--(h1) (s6)--(h2) (s6)--(h3) (s6)--(h4) (s6)--(h5);
+	\draw	(s1)--(z1) (s1)--(z2) (s1)--(z3)
+			(s2)--(z1) (s2)--(z2) (s2)--(z3)
+			(s3)--(z1) (s3)--(z2) (s3)--(z3)
+			(s4)--(z1) (s4)--(z2) (s4)--(z3)
+			(s5)--(z1) (s5)--(z2) (s5)--(z3)
+			(s6)--(z1) (s6)--(z2) (s6)--(z3);
+\end{tikzpicture}
+\end{center}
+\end{figure}
+In order to represent a mixed state, the first step we may take is purifying the system with ancillary freedoms, which is a basic concept in quantum information theory. Thus the whole system(system and environment) can be written as:
+\[ | \phi \qbar = \sum_{\vec{\sigma},\vec{\eta}} \phi(\vec{\sigma},\vec{\eta}) | \vec{\sigma} \qbar \otimes | \vec{\eta} \qbar, \]
+and the state of system is easily obtained via tracing out the ancillary degrees:
+\[ \rho(\vec{\sigma},\vec{\sigma}') = \sum_{\vec{\eta}} \phi(\vec{\sigma},\vec{\eta}) \phi^*(\vec{\sigma}', \vec{\eta}). \]
+Here we use two RBMs, which share the same architecture but different parameters(denoted by $\vec{\lambda}$ and $\vec{\gamma}$), to represent the wave function of the whole system:
+\[ \phi(\vec{\sigma},\vec{\eta}) = \frac{1}{\sqrt{Z_{\vec{\lambda}}}} \sqrt{p_{\vec{\lambda}}(\vec{\sigma},\vec{\eta})} \exp{(\frac{i}{2} \ln p_{\vec{\gamma}}(\vec{\sigma},\vec{\eta}))}, \]
+after tracing out the ancillary degrees, we can get the expression of system's density operator. 
+
+\subsection[The natural one]{The natural one\cite{{Nagy2019prl},{carleo2019prl}}}
+\begin{figure}[htbp]
+\begin{center}
+\begin{tikzpicture}
+	\draw (7,-1) node {$\textbf{a}$ \quad{} \textrm{bias}} (7,0) node {$\textbf{W}$ \quad{}\textrm{weights}} (7,1) node {$\textbf{b}$ \quad{}\textrm{bias}} (7,-2) node {$\textbf{U}$\quad{} \textrm{weights}} (7,-3) node {$\textbf{c}$ \quad{} \textrm{real bias}} (7,-4) node {$\textbf{U}^*$ \quad{}\textrm{weights}} (7,-5) node {$\textbf{a}^*$ \quad{}\textrm{bias}} (7,-6) node {$\textbf{W}^*$ \quad{}\textrm{weights}} (7,-7) node {$\textbf{b}^*$ \quad{} \textrm{bias}};
+	\draw (-7,-1) node {\textrm{visible(row)}} (-7,-3) node {\textrm{hidden}} (-7,1) node {\textrm{hidden}} (-7,-5) node {\textrm{visible(column)}} (-7, -7) node {hidden};
+	\tikzstyle{every node}=[draw,shape=circle,fill=red];
+	\node (s1) at (-5,-1) {$\sigma_1$};
+	\node (s2) at (-3,-1) {$\sigma_2$};
+	\node (s3) at (-1,-1) {$\sigma_3$};
+	\node (s4) at (1,-1) {$\sigma_4$};
+	\node (s5) at (3,-1) {$\sigma_5$};
+	\node (s6) at (5,-1) {$\sigma_6$};
+	\tikzstyle{every node}=[draw,shape=circle];
+	\node (h1) at (-4,1) {$\chi_1$};
+	\node (h2) at (-2,1) {$\chi_2$};
+	\node (h3) at (0,1) {$\chi_3$};
+	\node (h4) at (2,1) {$\chi_4$};
+	\node (h5) at (4,1) {$\chi_5$};
+	\tikzstyle{every node}=[draw,shape=circle];
+	\node (z1) at (-3,-3) {$\gamma_1$};
+	\node (z2) at (0,-3) {$\gamma_2$};
+	\node (z3) at (3,-3) {$\gamma_3$};
+	\tikzstyle{every node}=[draw,shape=circle,fill=cyan];
+	\node (c1) at (-5, -5) {$\eta_1$};
+	\node (c2) at (-3, -5) {$\eta_2$};
+	\node (c3) at (-1, -5) {$\eta_3$};
+	\node (c4) at (1, -5) {$\eta_4$};
+	\node (c5) at (3, -5) {$\eta_5$};
+	\node (c6) at (5, -5) {$\eta_6$};
+	\tikzstyle{every node}=[draw,shape=circle];
+	\node (e1) at (-4 , -7) {$\zeta_1$};
+	\node (e2) at (-2, -7) {$\zeta_2$};
+	\node (e3) at (0, -7) {$\zeta_3$};
+	\node (e4) at (2, -7) {$\zeta_4$};
+	\node (e5) at (4, -7) {$\zeta_5$};
+	\draw 	(s1)--(h1) (s1)--(h2) (s1)--(h3) (s1)--(h4) (s1)--(h5)
+			(s2)--(h1) (s2)--(h2) (s2)--(h3) (s2)--(h4) (s2)--(h5)
+			(s3)--(h1) (s3)--(h2) (s3)--(h3) (s3)--(h4) (s3)--(h5)
+			(s4)--(h1) (s4)--(h2) (s4)--(h3) (s5)--(h4) (s4)--(h5)
+			(s5)--(h1) (s5)--(h2) (s5)--(h3) (s5)--(h4) (s5)--(h5)
+			(s6)--(h1) (s6)--(h2) (s6)--(h3) (s6)--(h4) (s6)--(h5);
+	\draw	(s1)--(z1) (s1)--(z2) (s1)--(z3)
+			(s2)--(z1) (s2)--(z2) (s2)--(z3)
+			(s3)--(z1) (s3)--(z2) (s3)--(z3)
+			(s4)--(z1) (s4)--(z2) (s4)--(z3)
+			(s5)--(z1) (s5)--(z2) (s5)--(z3)
+			(s6)--(z1) (s6)--(z2) (s6)--(z3);
+	\draw	(z1)--(c1) (z1)--(c2) (z1)--(c3) (z1)--(c4) (z1)--(c5) (z1)--(c6)
+			(z2)--(c1) (z2)--(c2) (z2)--(c3) (z2)--(c4) (z2)--(c5) (z2)--(c6)
+			(z3)--(c1) (z3)--(c2) (z3)--(c3) (z3)--(c4) (z3)--(c5) (z3)--(c6);
+	\draw	(e1)--(c1) (e1)--(c2) (e1)--(c3) (e1)--(c4) (e1)--(c5) (e1)--(c6)
+			(e2)--(c1) (e2)--(c2) (e2)--(c3) (e2)--(c4) (e2)--(c5) (e2)--(c6)
+			(e3)--(c1) (e3)--(c2) (e3)--(c3) (e3)--(c4) (e3)--(c5) (e3)--(c6)
+			(e4)--(c1) (e4)--(c2) (e4)--(c3) (e4)--(c4) (e4)--(c5) (e4)--(c6)
+			(e5)--(c1) (e5)--(c2) (e5)--(c3) (e5)--(c4) (e5)--(c5) (e5)--(c6);
+\end{tikzpicture}
+\end{center}
+\end{figure}
+A natural way to represent a density operator is using one layer to encode the correlations within row degrees or column degrees, and another layer for the mixture of row and column degrees as\footnote{In order to satisfy the conditions of density operator, there must be some constraints on the RBM, like the conjugation of parameters, the symmetry of the structure, etc.}:
+\begin{eqnarray*}
+\rho(\vec{\sigma},\vec{\eta}) & = & \sum_{\vec{\chi},\vec{\gamma},\vec{\zeta}} \exp(\vec{c} \cdot \vec{\gamma}) \times \exp(\vec{a} \cdot \vec{\sigma} + \vec{b} \cdot \vec{\chi} + \vec{\chi} \cdot W \vec{\sigma} + \vec{\gamma} \cdot U \vec{\sigma}) \times \exp(\vec{a}^* \cdot \vec{\eta} + \vec{b}^* \cdot \vec{\zeta} + \vec{\zeta} \cdot W^* \vec{\eta} + \vec{\gamma} \cdot U^* \vec{\eta})
+\end{eqnarray*}
+Obviously, this method is more natural than the first one and we don't need the domain knowledge about state purification from quantum information. However, we have to do this at the cost of using complex parameters.
+
+\subsection[The `lazy' one]{The `lazy' one\cite{{Yoshioka2019prb}}}
+Further more, there is also a `lazy' way to represent the density matrix of the system. If we trust in the power of RBM, we can use the original structure\footnote{With complex and conjugate parameters of course.}! We just equally split the visible layers into two parts, one for row and the other for column,
+\[ \rho(\vec{\sigma},\vec{\eta}) = \frac{1}{Z} \sum_{\vec{\chi}} \exp(\vec{a} \cdot \vec{\sigma} + \vec{a}^* \cdot \vec{\eta} + \vec{b} \cdot \vec{\chi} + \vec{\chi} \cdot W \vec{\sigma} + \vec{\chi} \cdot W^* \vec{\eta}).  \]
+ Although we have applied some constraints on the RBM, it is not generally to be a legal density matrix\footnote{Positive-semidefinite and hermitian. Queation: why not use real $\vec{b}$ instead of complex $\vec{b}$ ?}. We believe that the optimization procedure will help us find the stationary state which is legal.
+
+\subsection{Map the optimization problem to a familiar one}
+The open quantum system is usually described by the so called Lindblad master equation for the reduced density matrix of the system:
+\[ \dot{\rho} = \mathcal{L} \rho, \]
+and the stationary state is determined by the condition $ \mathcal{L} \rho = 0.$ As we do in HEOM, we can reshape the density matrix to be a vector and the super-operator $\mathcal{L}$ to be a matrix, then the target state is just the eigenstate of the super-operator with eigenvalue $0$. Furthermore, the eigenstates other than the stationary one will have a negative value on their real part eigenvalues, which agrees with the physical picture that they will eventually decay to be zero in the dynamical evolution. Thus if we consider the super-operator $\mathcal{L}^\dag \mathcal{L}$ which is positive-semidefinite and hermitian, we will find that the stationary state is just the ground state of the ``hamiltonian" $\mathcal{L}^\dag \mathcal{L}$ with exact zero eigenvalue!
+
+\section{Variational Monte Carlo method}
+
+\subsection{Basic ideals of VMC}
+Assume we have a trial wave-function $|\phi\qbar$ with parameters $\vec{\alpha}$, we can expand it in the computational basis as:
+\[ | \phi \qbar = \sum_{\vec{\sigma}} |\vec{\sigma}\qbar \qket \vec{\sigma}| \phi \qbar = \sum_{\vec{\sigma}} \phi(\vec{\sigma}) | \vec{\sigma} \qbar. \]
+Thus we can compute any quantum observable $\hat{O}$ via:
+\begin{equation}
+\qket \hat{O} \qbar = \frac{\qket \phi | \hat{O} | \phi \qbar}{\qket \phi | \phi \qbar} = \frac{\sum_{\vec{\sigma}} \qket \phi | \vec{\sigma} \qbar \qket \vec{\sigma} | \hat{O} | \phi \qbar}{\sum_{\vec{\sigma}} \qket \phi | \vec{\sigma} \qbar \qket \vec{\sigma} | \phi \qbar} = \frac{\sum_{\vec{\sigma}} | \phi(\vec{\sigma}) |^2 O_\text{loc}(\vec{\sigma})}{\sum_{\vec{\sigma}} | \phi(\vec{\sigma}) |^2},
+\label{eq:eq4}
+\end{equation}
+the local observable $O_\text{loc}(\vec{\sigma})$ is defined by:
+\[ O_\text{loc}(\vec{\sigma}) = \frac{\qket \vec{\sigma} | \hat{O} | \phi \qbar}{\qket \vec{\sigma} | \phi \qbar}. \]
+However, it's impractical to sum over all the exponential numbered configurations. An alternative approach might be to sum over a set of configurations $\mathcal{S}$ sampled from the distribution $p(\vec{\sigma}) \propto | \phi(\vec{\sigma}) |^2$, and the formula \ref{eq:eq4} can be approximated as:
+\begin{equation}
+\qket \hat{O} \qbar \approx \frac{1}{|\mathcal{S}|} \sum_{\vec{\sigma} \in \mathcal{S}} O_\text{loc}(\vec{\sigma}).
+\label{eq:eq5}
+\end{equation}
+In undergraduate quantum mechanical class, we have learned the variational principle as ($| n \qbar$ are the eigenstates of system's hamiltonian, and ordered by the eigenvalues as $E_0 \leq E_1 \leq \cdots \leq E_N $):
+\[ E_\phi = \frac{\qket \phi | \hat{H} | \phi \qbar}{\qket \phi | \phi \qbar} = \frac{\sum_{n=0}^{N} E_n \qket \phi | n \qbar \qket n | \phi \qbar}{\qket \phi | \phi \qbar} \geq \frac{E_0 \sum_{n=0}^{N}  \qket \phi | n \qbar \qket n | \phi \qbar}{\qket \phi | \phi \qbar} = E_0,\]
+which states that the energy of a wave-function is bounded from below by the exact ground energy. The best choice of the parameters $\vec{\alpha}$ - the one makes the trial wave-function as close as possible to the ground state - is the one minimize the value of $E_\phi$. Obviously, a good variational wave-function will be the key to the accuracy of our result. A bad variational wave-function can never be a good approximation of the ground state! In practical applications, people usually impose some constraints or forms to the variational function known from other analytic or symmetry considerations, like Hartree-Fock technique or Density functional theory. However, RBM is a very powerful representation of the wave-function, we have no need to do other complicated analysis to make the guess function have the similar form as the target one. Anyway, we have two main steps in our VMC algorithm:
+\begin{itemize}
+	\item[1)] Find the best parameters $\vec{\alpha}$ which minimize the value $E_\phi$;
+	\item[2)] Calculate the quantities interested via formula \ref{eq:eq4} and \ref{eq:eq5}.
+\end{itemize}
+Now, there are still two questions we have to answer:
+\begin{itemize}
+	\item[1)] How to sample the set of configuration $\mathcal{S}$ from the distribution $p(\vec{\sigma}) \propto | \phi(\vec{\sigma}) |^2$;
+	\item[2)] How to find the best parameters $\vec{\alpha}$ for the ground state problem.
+\end{itemize}
+We will solve the first one in this section and leave the second one till the next section.
+
+\subsection{Importance sampling of spin configurations}
+The importance sampling of configurations is just similar as the Monte Carlo simulation of classical spin systems, and the only modification is the acceptance should be replaced by:
+\[ p(\vec{\sigma} \rightarrow \vec{\sigma}') = \min ( 1, \frac{|\phi(\vec{\sigma}')|^2}{|\phi(\vec{\sigma})|^2} ). \]
+\section{Stochastic reconfiguration method}
+Our trial wave-function $|\phi\qbar$ is dependent on a set of parameters $\vec{\alpha} = \{ \alpha_1, \alpha_2, \cdots, \alpha_p \}$, and we want to get the best $\vec{\alpha}$ to make $|\phi\qbar$ represent the ground state as close as possible. RS method tells us how to move in the parameter space to minimize the energy by an iterative way. For the trial wave-function $|\phi\qbar$ not orthogonal to the ground state, it is always possible to obtain a new state closer to the ground state by applying the operator $(\Lambda - \hat{H})$ to $|\phi\qbar$ with a sufficient large $\Lambda$ at least bigger than the largest eigenvalue of hamiltonian. The basic ideal of SR is to change the parameters of $|\phi\qbar$ in order to be close as possible as $(\Lambda - \hat{H})|\phi\qbar$. We set the new state to be the following form\footnote{In order to be close as possible as $(\Lambda - \hat{H})|\phi\qbar$, $\delta \alpha_k$ will not be a infinitesimal quantity, and a factor $\delta \alpha_0 \sim \Lambda$ is necessary before $|\phi\qbar$. However, they can point the desired trajectory in the parameter space and the updating formula needs a factor less than $\Lambda^{-1}$ to ensure the convergence.}:
+\[ |\phi' \qbar = \delta\alpha_0 |\phi\qbar + \sum_{k=1}^p \delta\alpha_k \frac{\partial |\phi\qbar}{\partial \alpha_k}. \]
+This formula can be written in a more compact way as:
+\begin{eqnarray*}
+|\phi'\qbar & = & \delta\alpha_0 |\phi\qbar + \sum_{k=1}^p \delta\alpha_k \frac{\partial}{\partial \alpha_k} \sum_{\vec{\sigma}} |\vec{\sigma}\qbar\qket\vec{\sigma}|\phi\qbar\\
+                 & = & \delta\alpha_0 |\phi\qbar + \sum_{k=1}^p \delta\alpha_k \sum_{\vec{\sigma}} \frac{\partial \ln \phi(\vec{\sigma})}{\partial \alpha_k} |\vec{\sigma}\qbar\qket\vec{\sigma}|\phi\qbar\\
+                 & = & \sum_{k=0}^p \delta\alpha_k \hat{\Delta}_{\phi k} |\phi\qbar.\\
+\hat{\Delta}_{\phi k} & := & \begin{cases} \mathbb{I} & \text{for } k = 0\\ \sum_{\vec{\sigma}} \frac{\partial \ln \phi(\vec{\sigma})}{\partial \alpha_k} |\vec{\sigma}\qbar\qket\vec{\sigma}| & \text{for } k \neq 0 \end{cases}
+\end{eqnarray*}
+Thus, we can get the following equation:
+\[ {\color{red}{\qket\phi| \hat{\Delta}_{\phi k}}} \sum_{k'=0}^p \delta\alpha_{k'} \sum_{\vec{\sigma}} \hat{\Delta}_{\phi k'} |\phi\qbar = {\color{red}{\qket\phi| \hat{\Delta}_{\phi k}}} (\Lambda - \hat{H})|\phi\qbar. \]
+Set the $k$ to be zero, we have:
+\[ \delta\alpha_0 = \Lambda - \qket \hat{H} \qbar - \sum_{k'=1}^p \delta \alpha_{k'} \qket \hat{\Delta}_{\phi k'} \qbar \sim \Lambda. \]
+Now we can substitute the value of $\delta\alpha_0$ for the case $k \neq 0$:
+\[
+(\Lambda - \qket \hat{H} \qbar - \sum_{k'=1}^p \delta\alpha_{k'} \qket \hat{\Delta}_{\phi k'} \qbar) \qket \hat{\Delta}_{\phi k} \qbar + \sum_{k'=1}^p \delta\alpha_{k'} \qket \hat{\Delta}_{\phi k} \hat{\Delta}_{\phi k'} \qbar = \Lambda \qket \hat{\Delta}_{\phi k} \qbar - \qket \hat{\Delta}_{\phi k} \hat{H} \qbar
+\]
+\[ \Downarrow \]
+\[
+\sum_{k'=1}^p \delta\alpha_{k'} (\qket \hat{\Delta}_{\phi k} \hat{\Delta}_{\phi k'} \qbar - \qket \hat{\Delta}_{\phi k'} \qbar \qket \hat{\Delta}_{\phi k} \qbar) = \qket \hat{H} \qbar \qket \hat{\Delta}_{\phi k} \qbar - \qket \hat{\Delta}_{\phi k} \hat{H} \qbar.
+\]
+By defining the tensor $\stackrel{\leftrightarrow}{S}$ and vector $\vec{f}$ as:
+\begin{eqnarray*}
+\stackrel{\leftrightarrow}{S}_{k k'} & = & \qket \hat{\Delta}_{\phi k} \hat{\Delta}_{\phi k'} \qbar - \qket \hat{\Delta}_{\phi k'} \qbar \qket \hat{\Delta}_{\phi k} \qbar;\\
+\vec{f}_k & = & \qket \hat{H} \qbar \qket \hat{\Delta}_{\phi k} \qbar - \qket \hat{\Delta}_{\phi k} \hat{H} \qbar,
+\end{eqnarray*}
+we finally come to the core formula of SR method\footnote{The inverse of tensor $\stackrel{\leftrightarrow}{S}$ may be ill defined, so we often add a small identity term to ensure the legality of the inverse operation as: $\stackrel{\leftrightarrow}{S} + \epsilon \mathbb{I}$, and good results can be obtained with $\epsilon \leq 10^{-4}$. Further the inverse of $\stackrel{\leftrightarrow}{S}$ is very hard for large number of parameters, which is a constraint.}:
+\[ \stackrel{\leftrightarrow}{S} \delta \vec{\alpha} = \vec{f}. \]
+In order to calculate $\delta \vec{\alpha}$, we need to know the expectation values in $\stackrel{\leftrightarrow}{S}$ and $\vec{f}$. Fortunately, they can all be approximated using the formula \ref{eq:eq5}. The corresponding local observables are:
+\begin{eqnarray*}
+\frac{\qket \vec{\sigma} | \hat{\Delta}_{\phi k} |\phi\qbar}{\qket\vec{\sigma}|\phi\qbar} & = & \frac{\qket \vec{\sigma} | \sum_{\vec{\sigma}'} \frac{\partial \ln \phi(\vec{\sigma}')}{\partial \alpha_k} |\vec{\sigma}'\qbar\qket\vec{\sigma}'|\phi\qbar}{\qket \vec{\sigma} | \phi \qbar} \,\,\,\,\,=\,\,\,\,\, \frac{\partial \ln \phi(\vec{\sigma})}{\partial \alpha_k};\\
+\frac{\qket \vec{\sigma} | \hat{\Delta}_{\phi k} \hat{\Delta}_{\phi k'} |\phi\qbar}{\qket\vec{\sigma}|\phi\qbar} & = & \frac{\qket \vec{\sigma} | \sum_{\vec{\sigma}'} \frac{\partial \ln \phi(\vec{\sigma}')}{\partial \alpha_k} |\vec{\sigma}'\qbar\qket\vec{\sigma}'| \sum_{\vec{\sigma}''} \frac{\partial \ln \phi(\vec{\sigma}'')}{\partial \alpha_k'} |\vec{\sigma}''\qbar\qket\vec{\sigma}''| \phi\qbar}{\qket \vec{\sigma} | \phi \qbar} \,\,\,\,\,=\,\,\,\,\, \frac{\partial \ln \phi(\vec{\sigma})}{\partial \alpha_k} \frac{\partial \ln \phi(\vec{\sigma})}{\partial \alpha_k'}\\
+\frac{\qket \vec{\sigma} | \hat{\Delta}_{\phi k} \hat{H} |\phi\qbar}{\qket\vec{\sigma}|\phi\qbar} & = & \frac{\qket \vec{\sigma} | \sum_{\vec{\sigma}'} \frac{\partial \ln \phi(\vec{\sigma}')}{\partial \alpha_k} |\vec{\sigma}'\qbar\qket\vec{\sigma}'| \hat{H}| \phi\qbar}{\qket \vec{\sigma} | \phi \qbar} \,\,\,\,\,=\,\,\,\,\, \frac{\partial \ln \phi(\vec{\sigma})}{\partial \alpha_k} E_{\text{loc}}(\vec{\sigma})
+\end{eqnarray*}
+Finally, our updating formula for the parameters is:
+\[ \vec{\alpha}' = \vec{\alpha} + \Delta t \delta \vec{\alpha}, \]
+where $\Delta t \leq 1/\Lambda$ is a sufficient small factor to ensure the convergence.
+
+\section[Conclusion]{Conclusion}
+So far, we have presented the basic ideal of using the model borrowed from machine learning to solve the quantum many-body physics. Besides the use of restricted Boltzmann machine, there are also many recent works which use other neural networks, like the convolutional neural network\cite{Titus2019prb} and recurrent neural network\cite{Mohamed2020prr,Roth2020arx}, to calculate the ground states of local Hamiltonians. It would be interesting to explore more connections between the many-body physics and machine learning in the future! 
+
 \vskip 2cm
 \centering
 \begin{thebibliography}{99}
-\bibitem{melko2016prb} Learning Thermodynamics with Boltzmann Machines, G. Torlai, R.G. Melko, 
-	\href{https://arxiv.org/abs/1606.02718}{arXiv:1606.02718v1}
-\bibitem{fischer2012tb} An Introduction to Restricted Boltzmann Machines, A. Fischer, C. Igel, 
-	\url{https://doi.org/10.1007/978-3-642-33275-3_2}
-
+\bibitem{melko2016prb} Learning Thermodynamics with Boltzmann Machines, G. Torlai, R.G. Melko, \href{https://arxiv.org/abs/1606.02718}{arXiv:1606.02718v1}
+\bibitem{fischer2012tb} An Introduction to Restricted Boltzmann Machines, A. Fischer, C. Igel
+\bibitem{carleo2017s} Solving the Quantum Many-Body Problem with Artificial Neural Networks, G. Carleo, etc, Science.355.602(2017)
+\bibitem{melko2019np} Restricted Boltzmann machines in quantum physics, R. G. Melko, etc, Nature Physics.15.887–892(2019)
+\bibitem{melko2018prl} Latent Space Purification via Neural Density Operators, G. Torlai, R. G. Melko, PhysRevLett.120.240503(2018)
+\bibitem{Ciuti2019prl} Variational neural network ansatz for steady states in open quantum systems, F. Vicentini, A. Biella, etc, PhysRevLett.122.250503(2019)
+\bibitem{Nagy2019prl} Variational Quantum Monte Carlo Method with a Neural-Network Ansatz for Open Quantum Systems, A. Nagy, V. Savona, PhysRevLett.122.250501(2019)
+\bibitem{Yoshioka2019prb} Constructing neural stationary states for open quantum many-body systems, N. Yoshioka, R. Hamazaki, PhysRevB.99.214306(2019)
+\bibitem{carleo2019prl} Neural-Network Approach to Dissipative Quantum Many-Body Dynamics, M. J. Hartmann, G. Carleo, PhysRevLett.122.250502(2019)
+\bibitem{Titus2019prb} Two-dimensional frustrated $J_1$-$J_2$ model studied with neural network quantum states, Kenny Choo, Titus Neupert, and Giuseppe Carleo, Phys.Rev.B100,125124(2019)
+\bibitem{Mohamed2020prr} Recurrent neural network wave functions, Mohamed Hibat-Allah, Martin Ganahl, Lauren E. Hayward, etc, Phys.Rev.Research2,023358(2020)
+\bibitem{Roth2020arx} Iterative Retraining of Quantum Spin Models Using Recurrent Neural Networks, Christopher Roth, \href{https://arxiv.org/abs/2003.06228}{arXiv:2003.06228}
 \end{thebibliography}
 
 \end{document}
